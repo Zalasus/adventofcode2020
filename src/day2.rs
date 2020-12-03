@@ -88,5 +88,5 @@ pub fn run() {
         }
     }
 
-    println!("Out of {} paswords, {} are valid according to policy 1, {} are valid according to policy 2", pw_count, policy1_valid_count, policy2_valid_count);
+    println!("Out of {} passwords, {} are valid according to policy 1, {} are valid according to policy 2", pw_count, policy1_valid_count, policy2_valid_count);
 }
