@@ -139,7 +139,7 @@ mod tests {
 }
 
 
-pub fn run() {
+fn main() {
     let map_string = std::fs::read_to_string("day3_input.txt").unwrap();
     let map = Map::new_from_str(&map_string);
 

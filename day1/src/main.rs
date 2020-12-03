@@ -57,7 +57,7 @@ fn part_two(input: &HashSet<isize>) {
 
 }
 
-pub fn run() {
+fn main() {
 
     let input = read_input();
 

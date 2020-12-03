@@ -1,4 +1,9 @@
 
+#[macro_use]
+extern crate lazy_static;
+
+extern crate regex;
+
 use std::io::{BufRead, BufReader};
 use std::fs::File;
 
@@ -69,7 +74,7 @@ mod tests {
     }
 }
 
-pub fn run() {
+fn main() {
 
     let mut pw_count = 0;
     let mut policy1_valid_count = 0;
