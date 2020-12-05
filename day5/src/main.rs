@@ -43,7 +43,10 @@ fn seat_decode(bsp: &str) -> (usize, usize, usize) {
 
 fn main() {
     let passes = std::fs::read_to_string("day5_input.txt").unwrap();
+
     let mut seat_ids = Vec::new();
+    seat_ids.reserve(passes.split('\n').count());
+
     for pass in passes.split('\n').filter(|l| !l.is_empty()) {
         let (_row, _col, seat_id) = seat_decode(pass);
         seat_ids.push(seat_id);
