@@ -4,6 +4,7 @@
 
 
 trait Count {
+    fn new() -> Self;
     fn count(&mut self, s: &str) -> usize;
 }
 
@@ -14,15 +15,13 @@ struct AnyCounter {
     buffer: Vec<char>
 }
 
-impl AnyCounter {
-    pub fn new() -> Self {
+impl Count for AnyCounter {
+    fn new() -> Self {
         Self{
             buffer: Vec::new()
         }
     }
-}
 
-impl Count for AnyCounter {
     fn count(&mut self, s: &str) -> usize {
         self.buffer.clear();
         self.buffer.extend(s.chars().filter(|c| *c != '\n'));
@@ -39,15 +38,13 @@ struct AllCounter {
     buffer: Vec<char>
 }
 
-impl AllCounter {
-    pub fn new() -> Self {
+impl Count for AllCounter {
+    fn new() -> Self {
         Self{
             buffer: Vec::new()
         }
     }
-}
 
-impl Count for AllCounter {
     fn count(&mut self, s: &str) -> usize {
         let line_count = s.trim().split('\n').count();
 
@@ -81,7 +78,8 @@ impl Count for AllCounter {
 }
 
 
-fn sum_group_answers<C: Count>(group_answers: &str, counter: &mut C) -> usize {
+fn sum_group_answers<C: Count>(group_answers: &str) -> usize {
+    let mut counter = C::new();
     group_answers.split("\n\n")
                  .filter(|l| !l.is_empty())
                  .map(|l| counter.count(l))
@@ -92,12 +90,10 @@ fn sum_group_answers<C: Count>(group_answers: &str, counter: &mut C) -> usize {
 fn main() {
     let group_answers = std::fs::read_to_string("day6_input.txt").unwrap();
 
-    let mut any_counter = AnyCounter::new();
-    let any_sum = sum_group_answers(&group_answers, &mut any_counter);
+    let any_sum = sum_group_answers::<AnyCounter>(&group_answers);
     println!("The sum of the count of answers thay appear *anywhere* is: {}", any_sum);
 
-    let mut all_counter = AllCounter::new();
-    let all_sum = sum_group_answers(&group_answers, &mut all_counter);
+    let all_sum = sum_group_answers::<AllCounter>(&group_answers);
     println!("The sum of the count of answers thay appear *everywhere* is: {}", all_sum);
 }
 
@@ -148,13 +144,11 @@ mod tests {
 
     #[test]
     fn summing_any() {
-        let mut counter = AnyCounter::new();
-        assert_eq!(sum_group_answers(&TEST_GROUPS, &mut counter), 11);
+        assert_eq!(sum_group_answers::<AnyCounter>(&TEST_GROUPS), 11);
     }
 
     #[test]
     fn summing_all() {
-        let mut counter = AllCounter::new();
-        assert_eq!(sum_group_answers(&TEST_GROUPS, &mut counter), 6);
+        assert_eq!(sum_group_answers::<AllCounter>(&TEST_GROUPS), 6);
     }
 }
