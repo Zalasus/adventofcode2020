@@ -7,6 +7,8 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
+const MY_BAG : &str = "shiny gold";
+
 lazy_static! {
     static ref NODE_REGEX : Regex = Regex::new("(\\D+?) bags contain ").unwrap();
     static ref EDGE_REGEX : Regex = Regex::new("(\\d+) (\\D+?) bags?").unwrap();
@@ -20,6 +22,13 @@ struct Node {
 }
 
 impl Node {
+    pub fn new(name: &str) -> Self {
+        Self{
+            name: name.to_string(),
+            edges: Vec::new()
+        }
+    }
+
     pub fn parse(s: &str) -> Self {
         let node_matches = NODE_REGEX.captures(s).unwrap();
         let name = node_matches[1].to_string();
@@ -60,23 +69,47 @@ impl Graph {
         }
     }
 
-    pub fn find_valid_bag_colors(&self, exact_quantities_only: bool) -> HashSet<String> {
-        // we basically perform a DFS over all edges starting from the shiny golden bag,
-        //  potentially ignoring those that have a quantity other than one. after that, the set of
-        //  visited nodes is the set of all valid bag colors
-        let mut visited : HashSet<String> = HashSet::with_capacity(self.nodes.len());
+    pub fn invert_edges(&self) -> Self {
+        let mut new_nodes = HashMap::with_capacity(self.nodes.len());
+        for node in &self.nodes {
+            new_nodes.insert(node.1.name.clone(), Node::new(&node.1.name));
+        }
+
+        for node in &self.nodes {
+            for edge in &node.1.edges {
+                let connected = new_nodes.get_mut(&edge.1).unwrap();
+                connected.edges.push(Edge(edge.0, node.1.name.clone()));
+            }
+        }
+
+        Self{
+            nodes: new_nodes
+        }
+    }
+
+    #[cfg(test)]
+    pub fn count_edges(&self) -> usize {
+        let mut result = 0;
+        for node in &self.nodes {
+            result += node.1.edges.len();
+        }
+        result
+    }
+
+    pub fn find_connected_nodes(&self, start: &str) -> HashSet<&str> {
+        // we basically perform a DFS over all edges starting from the given node. after that, the
+        //  set of visited nodes is the set of all nodes connected to start
+
+        let mut visited : HashSet<&str> = HashSet::with_capacity(self.nodes.len());
         let mut stack : Vec<&str> = Vec::with_capacity(self.nodes.len());
 
-        stack.push("shiny gold"); // initial node is the first on the stack
+        stack.push(start); // initial node is the first on the stack
 
         while !stack.is_empty() {
             let top = stack.pop().unwrap();
-            let node = self.nodes.get(top).unwrap();
+            let node = self.nodes.get(top).expect("invalid edge or initial node missing");
             for edge in &node.edges {
-                if exact_quantities_only && edge.0 > 1 {
-                    continue;
-                }
-                let not_yet_visited = visited.insert(edge.1.clone());
+                let not_yet_visited = visited.insert(&edge.1);
                 if not_yet_visited {
                     stack.push(&edge.1);
                 }
@@ -85,13 +118,47 @@ impl Graph {
 
         visited
     }
+
+    pub fn accumulate_edge_weights(&self, start: &str) -> usize {
+        // this is also a DFS, but we accumulate all edge weights. also, this one is recursive
+        //  because it's too late in the evening and i can't figure out how to do this iteratively
+
+        // visited is now a map, where the value is the number of bags contained plus one. this is
+        //  to prevent traversing the graph more than necessary or following cycles
+        let mut visited : HashMap<&str,usize> = HashMap::with_capacity(self.nodes.len());
+        visited.insert(start, 0); // insert start node to prevent a cycle with this node from being followed
+        self.recursive_accum(start, &mut visited)
+    }
+
+    // this basically calculates "how many nodes does node contain plus one"
+    fn recursive_accum<'a>(&'a self, node: &'a str, visited: &mut HashMap<&'a str,usize>) -> usize {
+        let me = self.nodes.get(node).unwrap();
+        let mut sum = 1;
+        for edge in &me.edges {
+            if let Some(previous_count) = visited.get(edge.1.as_str()) {
+                sum += edge.0*previous_count;
+            }else{
+                let contained = self.recursive_accum(&edge.1, visited);
+                visited.insert(&edge.1, contained);
+                sum += edge.0*contained;
+            }
+        }
+        sum
+    }
 }
 
 fn main() {
     let input = std::fs::read_to_string("day7_input.txt").unwrap();
     let graph = Graph::new(&input);
-    let valid_colors = graph.find_valid_bag_colors(false);
-    println!("Number of colors that can hold a shiny gold bag: {}", valid_colors.len());
+
+    // we can find the desired count more quickly if we traverse the bags "bottom-up". for that,
+    //  we have to invert the graph ("abc bags contain xyz.." becomes "xyz can be contained in abc..")
+    let inverted = graph.invert_edges();
+    let valid_colors = inverted.find_connected_nodes(MY_BAG);
+    println!("Number of colors that can hold a {} bag somewhere in it: {}", MY_BAG, valid_colors.len());
+
+    let accumulated_bag_count = graph.accumulate_edge_weights(MY_BAG);
+    println!("To be rule-conformant, a {} bag has to contain {} total other bags", MY_BAG, accumulated_bag_count-1);
 }
 
 #[cfg(test)]
@@ -110,13 +177,17 @@ mod tests {
 
     #[test]
     fn parse_multi_edge() {
-        let node = Node::parse("light red bags contain 1 bright white bag, 2 muted yellow bags.");
-        assert_eq!(node.name, "light red");
-        assert_eq!(node.edges.len(), 2);
-        assert_eq!(node.edges[0].0, 1);
-        assert_eq!(node.edges[0].1, "bright white");
+        let node = Node::parse("bright lavender bags contain 2 dark lavender bags, 2 mirrored cyan bags, 1 dim yellow bag, 5 vibrant teal bags.");
+        assert_eq!(node.name, "bright lavender");
+        assert_eq!(node.edges.len(), 4);
+        assert_eq!(node.edges[0].0, 2);
+        assert_eq!(node.edges[0].1, "dark lavender");
         assert_eq!(node.edges[1].0, 2);
-        assert_eq!(node.edges[1].1, "muted yellow");
+        assert_eq!(node.edges[1].1, "mirrored cyan");
+        assert_eq!(node.edges[2].0, 1);
+        assert_eq!(node.edges[2].1, "dim yellow");
+        assert_eq!(node.edges[3].0, 5);
+        assert_eq!(node.edges[3].1, "vibrant teal");
     }
 
     #[test]
@@ -137,11 +208,43 @@ vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
 dotted black bags contain no other bags.";
 
+const GRAPH_INPUT_2 : &str =
+"shiny gold bags contain 2 dark red bags.
+dark red bags contain 2 dark orange bags.
+dark orange bags contain 2 dark yellow bags.
+dark yellow bags contain 2 dark green bags.
+dark green bags contain 2 dark blue bags.
+dark blue bags contain 2 dark violet bags.
+dark violet bags contain no other bags.";
+
     #[test]
-    fn simple_graph() {
+    fn graph_creation_inversion() {
         let graph = Graph::new(GRAPH_INPUT);
-        let valid_colors = graph.find_valid_bag_colors(false);
+        assert_eq!(graph.nodes.len(), 9);
+        assert_eq!(graph.count_edges(), 13);
+
+        let inverted = graph.invert_edges();
+        assert_eq!(inverted.nodes.len(), 9);
+        assert_eq!(inverted.count_edges(), 13);
+    }
+
+    #[test]
+    fn color_count() {
+        let graph = Graph::new(GRAPH_INPUT);
+        let inverted = graph.invert_edges();
+        let valid_colors = inverted.find_connected_nodes(MY_BAG);
         assert_eq!(valid_colors.len(), 4);
+    }
+
+    #[test]
+    fn total_bag_count() {
+        let graph = Graph::new(GRAPH_INPUT);
+        let total_contained_bags = graph.accumulate_edge_weights(MY_BAG) - 1; // don't count the outer bag!
+        assert_eq!(total_contained_bags, 32);
+
+        let graph2 = Graph::new(GRAPH_INPUT_2);
+        let total_contained_bags2 = graph2.accumulate_edge_weights(MY_BAG) - 1;
+        assert_eq!(total_contained_bags2, 126);
     }
 
 }
