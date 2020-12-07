@@ -1,0 +1,8 @@
+[package]
+name = "day7"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+regex = "^1.4.2"
+lazy_static = "^1.4.0"
