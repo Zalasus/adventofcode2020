@@ -10,6 +10,9 @@ enum Cell {
 type Coord = (isize, isize);
 
 
+const MOORE_NEIGHBOURHOOD : &[Coord] = &[(1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1), (0,1), (1,1)];
+
+
 struct Automaton {
     width: usize,
     height: usize,
@@ -132,8 +135,7 @@ impl AdjacencyRuleset {
 
     fn count_adjacent_occupied_seats(automaton: &Automaton, p: Coord) -> usize {
         let mut result = 0;
-        let offsets = [(1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1), (0,1), (1,1)];
-        for offset in &offsets {
+        for offset in MOORE_NEIGHBOURHOOD {
             let op = (p.0 + offset.0, p.1 + offset.1);
             if let Some(Cell::OccupiedSeat) = automaton.get(op) {
                 result += 1;
@@ -167,20 +169,19 @@ impl Ruleset for AdjacencyRuleset {
 
 
 struct SightlineRuleset {
-    visibility: Vec<[Option<Coord>; 8]>
+    visibility: Vec<[Option<Coord>; 8]> // a list of visible cells for each cell
 }
 
 impl SightlineRuleset {
     pub fn new(automaton: &Automaton) -> Self {
         // by precomputing the visibility for each seat, we can improve performance by quite a bit
-        let slopes = [(1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1), (0,1), (1,1)];
         let mut visibility = Vec::new();
         visibility.resize(automaton.width*automaton.height, [None; 8]);
         for y in 0..automaton.height {
             for x in 0..automaton.width {
                 let start = (x as isize, y as isize);
                 let cell_visibility = &mut visibility[x + y*automaton.width];
-                for (index, slope) in slopes.iter().enumerate() {
+                for (index, slope) in MOORE_NEIGHBOURHOOD.iter().enumerate() {
                     cell_visibility[index] = Self::walk(automaton, start, *slope);
                 }
             }
@@ -249,17 +250,21 @@ fn main() {
     {
         let mut automaton = Automaton::new(&input);
         let mut ruleset = AdjacencyRuleset::new();
+        let start_time = std::time::Instant::now();
         while automaton.step(&mut ruleset) {
         }
-        println!("Final state with adjacency ruleset has {} occupied seats", automaton.count_total_occupied_seats());
+        let sim_time = start_time.elapsed();
+        println!("Final state with adjacency ruleset has {} occupied seats. Simulation took {:?}", automaton.count_total_occupied_seats(), sim_time);
     }
 
     {
         let mut automaton = Automaton::new(&input);
         let mut ruleset = SightlineRuleset::new(&automaton);
+        let start_time = std::time::Instant::now();
         while automaton.step(&mut ruleset) {
         }
-        println!("Final state with sightlines ruleset has {} occupied seats", automaton.count_total_occupied_seats());
+        let sim_time = start_time.elapsed();
+        println!("Final state with sightlines ruleset has {} occupied seats. Simulation took {:?}", automaton.count_total_occupied_seats(), sim_time);
     }
 }
 
