@@ -167,34 +167,53 @@ impl Ruleset for AdjacencyRuleset {
 
 
 struct SightlineRuleset {
+    visibility: Vec<[Option<Coord>; 8]>
 }
 
 impl SightlineRuleset {
-    pub fn new() -> Self {
-        Self{}
+    pub fn new(automaton: &Automaton) -> Self {
+        // by precomputing the visibility for each seat, we can improve performance by quite a bit
+        let slopes = [(1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1), (0,1), (1,1)];
+        let mut visibility = Vec::new();
+        visibility.resize(automaton.width*automaton.height, [None; 8]);
+        for y in 0..automaton.height {
+            for x in 0..automaton.width {
+                let start = (x as isize, y as isize);
+                let cell_visibility = &mut visibility[x + y*automaton.width];
+                for (index, slope) in slopes.iter().enumerate() {
+                    cell_visibility[index] = Self::walk(automaton, start, *slope);
+                }
+            }
+        }
+        Self{
+            visibility
+        }
     }
 
-    fn count_visible_occupied_seats(automaton: &Automaton, start: Coord) -> usize {
+    fn count_visible_occupied_seats(&self, automaton: &Automaton, start: Coord) -> usize {
         let mut result = 0;
-        let slopes = [(1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1), (0,1), (1,1)];
-        for slope in &slopes {
-            if let Some(Cell::OccupiedSeat) = Self::walk(automaton, start, *slope) {
-                result += 1;
+        let x = start.0 as usize;
+        let y = start.1 as usize;
+        for visible_coord in &self.visibility[x + y*automaton.width] {
+            if let Some(coord) = visible_coord {
+                if automaton.get(*coord).unwrap() == Cell::OccupiedSeat {
+                    result += 1;
+                }
             }
         }
         result
     }
 
-    /// Walks along the specified line and returns the first non-floor cell it encounters, or None
-    ///  if it walks out of the seating area.
-    fn walk(automaton: &Automaton, start: Coord, slope: Coord) -> Option<Cell> {
+    /// Walks along the specified line and returns the coordinate of the first non-floor cell it
+    ///  encounters, or None if it walks out of the seating area.
+    fn walk(automaton: &Automaton, start: Coord, slope: Coord) -> Option<Coord> {
         let mut p = start;
         loop {
             p.0 += slope.0;
             p.1 += slope.1;
             match automaton.get(p) {
                 Some(Cell::Floor) => {},
-                Some(not_floor) => { return Some(not_floor); },
+                Some(_) => { return Some(p); },
                 None => { return None; }
             }
         }
@@ -205,14 +224,14 @@ impl Ruleset for SightlineRuleset {
     fn step_cell(&mut self, automaton: &Automaton, cell: Cell, p: Coord) -> Cell {
         match cell {
             Cell::Seat => {
-                if SightlineRuleset::count_visible_occupied_seats(automaton, p) == 0 {
+                if SightlineRuleset::count_visible_occupied_seats(self, automaton, p) == 0 {
                     Cell::OccupiedSeat
                 }else{
                     Cell::Seat
                 }
             },
             Cell::OccupiedSeat => {
-                if SightlineRuleset::count_visible_occupied_seats(automaton, p) >= 5 {
+                if SightlineRuleset::count_visible_occupied_seats(self, automaton, p) >= 5 {
                     Cell::Seat
                 }else{
                     Cell::OccupiedSeat
@@ -237,7 +256,7 @@ fn main() {
 
     {
         let mut automaton = Automaton::new(&input);
-        let mut ruleset = SightlineRuleset::new();
+        let mut ruleset = SightlineRuleset::new(&automaton);
         while automaton.step(&mut ruleset) {
         }
         println!("Final state with sightlines ruleset has {} occupied seats", automaton.count_total_occupied_seats());
@@ -319,7 +338,6 @@ mod tests {
 
     #[test]
     fn simulate_sightlines() {
-        let mut ruleset = SightlineRuleset::new();
         let mut automaton = Automaton::new("L.LL.LL.LL
                                             LLLLLLL.LL
                                             L.L.L..L..
@@ -330,6 +348,7 @@ mod tests {
                                             LLLLLLLLLL
                                             L.LLLLLL.L
                                             L.LLLLL.LL");
+        let mut ruleset = SightlineRuleset::new(&automaton);
         assert_eq!(automaton.step(&mut ruleset), true);
         assert_eq!(automaton.step(&mut ruleset), true);
         assert_eq!(automaton.step(&mut ruleset), true);
