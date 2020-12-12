@@ -80,7 +80,7 @@ fn main() {
     let mut policy1_valid_count = 0;
     let mut policy2_valid_count = 0;
 
-    let f = File::open("day2_input.txt").expect("Failed to open input file");
+    let f = File::open("day2/input.txt").expect("Failed to open input file");
     let reader = BufReader::new(f);
     for line_result in reader.lines() {
         let line = line_result.expect("Failed to read line");

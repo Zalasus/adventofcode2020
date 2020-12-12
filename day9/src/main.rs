@@ -38,7 +38,7 @@ fn sum_min_max(data: &[isize], range: (usize, usize)) -> isize {
 }
 
 fn main() {
-    let input = std::fs::read_to_string("day9_input.txt").unwrap();
+    let input = std::fs::read_to_string("day9/input.txt").unwrap();
     let data = input.split('\n').filter_map(|l| l.trim().parse::<isize>().ok()).collect::<Vec<isize>>();
     if let Some(index) = do_the_thing(&data, 25) {
         println!("Found {} at index {}", data[index], index);

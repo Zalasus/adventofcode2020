@@ -140,7 +140,7 @@ mod tests {
 
 
 fn main() {
-    let map_string = std::fs::read_to_string("day3_input.txt").unwrap();
+    let map_string = std::fs::read_to_string("day3/input.txt").unwrap();
     let map = Map::new_from_str(&map_string);
 
     let slopes = [(1,1), (3,1), (5,1), (7,1), (1,2)];

@@ -48,7 +48,7 @@ fn find_permutations(mut data: Vec<isize>) -> usize {
 }
 
 fn main() {
-    let input = std::fs::read_to_string("day10_input.txt").unwrap();
+    let input = std::fs::read_to_string("day10/input.txt").unwrap();
     let data = input.split('\n').filter_map(|l| l.trim().parse::<isize>().ok()).collect::<Vec<isize>>();
 
     let differences = find_differences(data.clone());

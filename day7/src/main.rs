@@ -148,7 +148,7 @@ impl Graph {
 }
 
 fn main() {
-    let input = std::fs::read_to_string("day7_input.txt").unwrap();
+    let input = std::fs::read_to_string("day7/input.txt").unwrap();
     let graph = Graph::new(&input);
 
     // we can find the desired count more quickly if we traverse the bags "bottom-up". for that,

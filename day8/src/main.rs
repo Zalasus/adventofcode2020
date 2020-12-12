@@ -188,7 +188,7 @@ fn flip_nop_jmp(i: &mut Instruction) {
 }
 
 fn main() {
-    let input = std::fs::read_to_string("day8_input.txt").unwrap();
+    let input = std::fs::read_to_string("day8/input.txt").unwrap();
     let mut code = assemble(&input);
     let run_result = run(&code);
     println!("Final accumulator value before fixing: {}", run_result.0);

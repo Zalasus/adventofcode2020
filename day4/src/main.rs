@@ -193,7 +193,7 @@ fn main() {
     let mut have_fields = 0;
     let mut valid_passport_count = 0;
 
-    let passports = std::fs::read_to_string("day4_input.txt").unwrap();
+    let passports = std::fs::read_to_string("day4/input.txt").unwrap();
     for passport in passports.split("\n\n") {
         let p = Passport::new_from_str(passport);
         if p.has_required_fields(&required_fields) {

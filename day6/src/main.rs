@@ -88,7 +88,7 @@ fn sum_group_answers<C: Count>(group_answers: &str) -> usize {
 
 
 fn main() {
-    let group_answers = std::fs::read_to_string("day6_input.txt").unwrap();
+    let group_answers = std::fs::read_to_string("day6/input.txt").unwrap();
 
     let any_sum = sum_group_answers::<AnyCounter>(&group_answers);
     println!("The sum of the count of answers thay appear *anywhere* is: {}", any_sum);

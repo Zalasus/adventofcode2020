@@ -7,7 +7,7 @@ use std::fs::File;
 fn read_input() -> HashSet<isize> {
     let mut result : HashSet<isize> = HashSet::new();
 
-    let f = File::open("day1_input.txt").expect("Failed to open input file");
+    let f = File::open("day1/input.txt").expect("Failed to open input file");
     let reader = BufReader::new(f);
     for line_result in reader.lines() {
         let line = line_result.expect("Failed to read line");

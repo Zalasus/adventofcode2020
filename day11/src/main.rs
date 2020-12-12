@@ -225,7 +225,7 @@ impl Ruleset for SightlineRuleset {
 
 
 fn main() {
-    let input = std::fs::read_to_string("day11_input.txt").unwrap();
+    let input = std::fs::read_to_string("day11/input.txt").unwrap();
 
     {
         let mut automaton = Automaton::new(&input);
