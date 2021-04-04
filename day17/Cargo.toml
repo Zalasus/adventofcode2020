@@ -1,0 +1,6 @@
+[package]
+name = "day17"
+edition = "2018"
+
+[dependencies]
+bit-vec="^0.6.3"
